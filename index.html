@@ -2,51 +2,63 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Cursos</title>
+  <title>Cursos Disponíveis</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: Arial, sans-serif; padding: 16px; background: #f7f7f7; }
-    .curso { background: #fff; border-radius: 8px; margin-bottom: 16px; padding: 16px; box-shadow: 0 1px 5px #0001; }
-    .curso h2 { margin-top: 0; }
+    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 1em; }
+    .curso { background: #fff; border-radius: 8px; margin-bottom: 1em; padding: 1em; box-shadow: 0 1px 5px #0001; }
+    .curso h2 { margin: 0 0 0.5em 0; }
     @media (max-width: 600px) {
-      .curso { padding: 10px; }
+      .curso { padding: 0.6em; }
     }
   </style>
 </head>
 <body>
-  <h1>Cursos Disponíveis</h1>
-  <div id="cursos"></div>
+  <h1>Cursos</h1>
+  <div id="cursos">Carregando cursos...</div>
+
+  <!-- SheetJS para ler XLSX -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.0/xlsx.full.min.js"></script>
   <script>
-    // Função para ler e exibir os cursos
     async function carregarCursos() {
-      // Baixar o arquivo
-      const response = await fetch('listacursos.xlsx');
-      const arrayBuffer = await response.arrayBuffer();
-      // Ler o arquivo Excel
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const cursos = XLSX.utils.sheet_to_json(sheet);
+      let container = document.getElementById('cursos');
+      try {
+        // Busca o arquivo XLSX
+        const response = await fetch('listacursos.xlsx');
+        if (!response.ok) {
+          container.innerHTML = "Arquivo 'listacursos.xlsx' não encontrado!";
+          return;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const cursos = XLSX.utils.sheet_to_json(sheet);
 
-      // Montar HTML
-      const container = document.getElementById('cursos');
-      cursos.forEach(curso => {
-        // Protege contra linhas vazias
-        if (!curso.nome) return;
-        const el = document.createElement('div');
-        el.className = 'curso';
-        el.innerHTML = `
-          <h2>${curso.nome}</h2>
-          <div>${curso.descricao ? curso.descricao.replace(/\n/g, '<br>') : ''}</div>
-          ${curso.duracao ? `<p><strong>Duração:</strong> ${curso.duracao} meses</p>` : ''}
-          ${curso.cargaHoraria ? `<p><strong>Carga Horária:</strong> ${curso.cargaHoraria} horas</p>` : ''}
-          ${curso.turno ? `<p><strong>Turno:</strong> ${curso.turno}</p>` : ''}
-          ${curso.dias ? `<p><strong>Dias:</strong> ${curso.dias}</p>` : ''}
-          ${curso.horario ? `<p><strong>Horário:</strong> ${curso.horario}</p>` : ''}
-          ${curso.dataInicio ? `<p><strong>Data de Início:</strong> ${curso.dataInicio}</p>` : ''}
-        `;
-        container.appendChild(el);
-      });
+        if (!cursos.length) {
+          container.innerHTML = "Nenhum curso encontrado na planilha.";
+          return;
+        }
+
+        container.innerHTML = '';
+        cursos.forEach(curso => {
+          if (!curso.nome) return;
+          const el = document.createElement('div');
+          el.className = 'curso';
+          el.innerHTML = `
+            <h2>${curso.nome}</h2>
+            <div>${curso.descricao ? curso.descricao.replace(/\n/g, '<br>') : ''}</div>
+            ${curso.duracao ? `<p><b>Duração:</b> ${curso.duracao} meses</p>` : ''}
+            ${curso.cargaHoraria ? `<p><b>Carga Horária:</b> ${curso.cargaHoraria} horas</p>` : ''}
+            ${curso.turno ? `<p><b>Turno:</b> ${curso.turno}</p>` : ''}
+            ${curso.dias ? `<p><b>Dias:</b> ${curso.dias}</p>` : ''}
+            ${curso.horario ? `<p><b>Horário:</b> ${curso.horario}</p>` : ''}
+            ${curso.dataInicio ? `<p><b>Data de Início:</b> ${curso.dataInicio}</p>` : ''}
+          `;
+          container.appendChild(el);
+        });
+      } catch (e) {
+        container.innerHTML = "Erro ao carregar cursos: " + e.message;
+      }
     }
     carregarCursos();
   </script>
