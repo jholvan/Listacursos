@@ -1,66 +1,70 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Cursos Disponíveis</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 1em; }
-    .curso { background: #fff; border-radius: 8px; margin-bottom: 1em; padding: 1em; box-shadow: 0 1px 5px #0001; }
-    .curso h2 { margin: 0 0 0.5em 0; }
-    @media (max-width: 600px) {
-      .curso { padding: 0.6em; }
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 10px; }
+    th { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  <h1>Cursos</h1>
-  <div id="cursos">Carregando cursos...</div>
+  <h1>Cursos Disponíveis</h1>
+  <div id="cursos">Carregando...</div>
 
-  <!-- SheetJS para ler XLSX -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.0/xlsx.full.min.js"></script>
+  <!-- SheetJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.1/dist/xlsx.full.min.js"></script>
   <script>
-    async function carregarCursos() {
-      let container = document.getElementById('cursos');
-      try {
-        // Busca o arquivo XLSX
-        const response = await fetch('listacursos.xlsx');
-        if (!response.ok) {
-          container.innerHTML = "Arquivo 'listacursos.xlsx' não encontrado!";
-          return;
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const cursos = XLSX.utils.sheet_to_json(sheet);
+    // O arquivo está na mesma pasta do index.html
+    const xlsxUrl = './listacursos.xlsx';
 
-        if (!cursos.length) {
-          container.innerHTML = "Nenhum curso encontrado na planilha.";
-          return;
-        }
+    fetch(xlsxUrl)
+      .then(response => {
+        if (!response.ok) throw new Error('Arquivo não encontrado');
+        return response.arrayBuffer();
+      })
+      .then(arrayBuffer => {
+        const data = new Uint8Array(arrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const cursos = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-        container.innerHTML = '';
+        let html = `<table>
+          <tr>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Duração</th>
+            <th>Carga Horária</th>
+            <th>Turno</th>
+            <th>Dias</th>
+            <th>Horário</th>
+            <th>Data Início</th>
+          </tr>`;
         cursos.forEach(curso => {
-          if (!curso.nome) return;
-          const el = document.createElement('div');
-          el.className = 'curso';
-          el.innerHTML = `
-            <h2>${curso.nome}</h2>
-            <div>${curso.descricao ? curso.descricao.replace(/\n/g, '<br>') : ''}</div>
-            ${curso.duracao ? `<p><b>Duração:</b> ${curso.duracao} meses</p>` : ''}
-            ${curso.cargaHoraria ? `<p><b>Carga Horária:</b> ${curso.cargaHoraria} horas</p>` : ''}
-            ${curso.turno ? `<p><b>Turno:</b> ${curso.turno}</p>` : ''}
-            ${curso.dias ? `<p><b>Dias:</b> ${curso.dias}</p>` : ''}
-            ${curso.horario ? `<p><b>Horário:</b> ${curso.horario}</p>` : ''}
-            ${curso.dataInicio ? `<p><b>Data de Início:</b> ${curso.dataInicio}</p>` : ''}
-          `;
-          container.appendChild(el);
+          if (curso.nome) {
+            html += `<tr>
+              <td>${curso.nome}</td>
+              <td style="max-width:300px; white-space:pre-line">${curso.descricao || ""}</td>
+              <td>${curso.duracao || ""}</td>
+              <td>${curso.cargaHoraria || ""}</td>
+              <td>${curso.turno || ""}</td>
+              <td>${curso.dias || ""}</td>
+              <td>${curso.horario || ""}</td>
+              <td>${curso.dataInicio || ""}</td>
+            </tr>`;
+          }
         });
-      } catch (e) {
-        container.innerHTML = "Erro ao carregar cursos: " + e.message;
-      }
-    }
-    carregarCursos();
+        html += `</table>`;
+        document.getElementById('cursos').innerHTML = html;
+      })
+      .catch(error => {
+        document.getElementById('cursos').innerHTML = 
+          "<p>Não foi possível carregar os cursos automaticamente.<br>"+error.message+"</p>";
+      });
   </script>
 </body>
 </html>
